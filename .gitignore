@@ -1,0 +1,14 @@
+# OS & Editor
+.DS_Store
+*.swp
+*~
+.idea/
+.vscode/
+
+# Build & temporary files
+*.tmp
+*.log
+
+# LLM agent memory (local only)
+.ai/
+llm.md
