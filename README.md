@@ -93,3 +93,22 @@ The mod includes an offline test harness covering syntax validation and 17 compr
 ```
 
 The test runner resolves game scripts dynamically and includes standalone fallback mocks to run cleanly in CI environments without requiring a local game installation.
+
+---
+
+## Status
+
+### What works (automated)
+- Lua syntax validation for all mod files.
+- Companion spawn and SGwilson stubs.
+- Harvest AI: priority over distance, trap handling, chop/mine chores, player-target avoidance, stall recovery.
+- Storage routing: companion -> player -> ground.
+- Robot egg transform/deploy and settings restore.
+- Container top-dock hook.
+
+### Pending in-game verification
+- 4-column filter grid fit and master checkboxes.
+- Boat riding in Shipwrecked/Hamlet.
+- Idle wander and leash behavior.
+- Top-dock offset against combined-status/WX icons.
+- Debug log HUD visibility across resolutions.
