@@ -1,0 +1,23 @@
+name: Build mod
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create mod zip
+        run: |
+          cd wx_autoharvester
+          zip -r ../wx-autoharvester.zip .
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wx-autoharvester
+          path: wx-autoharvester.zip
+```<|end|><|start|><|start|>assistant<|channel|>analysis<|message|>Update mod name.<|end|><|start|>Assistant to=edit<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="path">
+/home/thomas/Projects/autoharvester/wx_autoharvester/modinfo.lua

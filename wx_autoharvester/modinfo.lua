@@ -1,4 +1,4 @@
-name = "WX-78 Auto-Harvester"
+name = "WX-78 Harvest-Bot"
 description = "Spawns a scaled-down WX-78 companion that follows the player, automatically harvests nearby resources, and transfers them to inventory."
 author = "Modder"
 version = "1.0"
