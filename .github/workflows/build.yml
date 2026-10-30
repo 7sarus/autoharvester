@@ -27,5 +27,3 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: wx-autoharvester.zip
-```<|end|><|start|> assistant to=bash<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="command">
-cd /home/thomas/Projects/autoharvester && git add .github/workflows/build.yml && git commit -m "ci: publish GitHub release on version tags" && git tag v1.0.0 && git push origin master --tags 2>&1 | tail -10
