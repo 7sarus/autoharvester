@@ -1,5 +1,10 @@
 # WX-78 Auto-Harvester
 
+[![CI](https://github.com/7sarus/autoharvester/actions/workflows/build.yml/badge.svg)](https://github.com/7sarus/autoharvester/actions/workflows/build.yml)
+[![Star History](https://img.shields.io/github/stars/7sarus/autoharvester?style=social)](https://star-history.com/#7sarus/autoharvester&Date)
+
+![Star History Chart](https://api.star-history.com/svg?repos=7sarus/autoharvester&type=Date)
+
 A companion mod for Klei Entertainment's *Don't Starve* (Singleplayer: Vanilla, Reign of Giants, Shipwrecked, and Hamlet).
 
 Spawns a scaled-down WX-78 companion that follows the player, automatically harvests nearby resources within a configurable radius, and stores items in a top-docked companion inventory.
