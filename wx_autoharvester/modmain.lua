@@ -1,6 +1,7 @@
 PrefabFiles = {
     "wx_companion",
     "harvest_range_ring",
+    "robot_egg",
 }
 
 local GLOBAL = GLOBAL
@@ -22,6 +23,10 @@ local toggle_key = GetModConfigData("KEY_TOGGLE_UI") or GLOBAL.KEY_H
 local toggle_storage_key = GetModConfigData("KEY_TOGGLE_STORAGE") or GLOBAL.KEY_C
 Logger.SetLevel(GetModConfigData("DEBUG_LOGGING") or 2)
 
+if GLOBAL.STRINGS and GLOBAL.STRINGS.NAMES then
+    GLOBAL.STRINGS.NAMES.ROBOT_EGG = "Robot Seed"
+end
+
 -- DS SP has FindEntities but not FindFirstEntityWithTag
 local function FindCompanionEntity()
     local x, y, z = 0, 0, 0
@@ -31,14 +36,65 @@ local function FindCompanionEntity()
     return ents and ents[1] or nil
 end
 
+local function FindRobotEgg(player)
+    if player and player:IsValid() and player.components.inventory then
+        for _, item in pairs(player.components.inventory.itemslots or {}) do
+            if item and item:IsValid() and item:HasTag("robot_egg") then return item end
+        end
+        local overflow = player.components.inventory.overflow
+        if overflow and overflow.components.container then
+            for _, item in pairs(overflow.components.container.slots or {}) do
+                if item and item:IsValid() and item:HasTag("robot_egg") then return item end
+            end
+        end
+        local active = player.components.inventory.activeitem
+        if active and active:IsValid() and active:HasTag("robot_egg") then return active end
+    end
+    local x, y, z = 0, 0, 0
+    if player and player.Transform then x, y, z = player.Transform:GetWorldPosition() end
+    local eggs = TheSim and TheSim:FindEntities(x, y, z, 9999, {"robot_egg"})
+    return eggs and eggs[1] or nil
+end
+
+local function HasRobotEgg(player)
+    return FindRobotEgg(player) ~= nil
+end
+
+local function GetCompanionOrEgg(player)
+    if player and player.wx_companion and player.wx_companion:IsValid() then
+        return player.wx_companion
+    end
+    if player and player.wx_egg and player.wx_egg:IsValid() then
+        return player.wx_egg
+    end
+    local egg = FindRobotEgg(player)
+    if egg and egg:IsValid() then
+        return egg
+    end
+    return nil
+end
+
+local function TransformCompanionToEgg(player)
+    if not player or not player:IsValid() then return end
+    local comp = player.wx_companion
+    if comp and comp:IsValid() and comp.TransformToEgg and not comp:HasTag("robot_egg") then
+        comp:TransformToEgg(player)
+    end
+end
+
 local function EnsureCompanion(player)
     if not player or not player:IsValid() then return end
+
+    local driver = player.components.driver
+    if driver and driver.GetIsDriving and driver:GetIsDriving() then
+        return
+    end
 
     if not player.wx_companion or not player.wx_companion:IsValid() then
         local existing = FindCompanionEntity()
         if existing and existing:IsValid() then
             player.wx_companion = existing
-        else
+        elseif not HasRobotEgg(player) then
             local px, py, pz = player.Transform:GetWorldPosition()
             local companion = nil
             Logger.SafeCall("SPAWN", function()
@@ -62,9 +118,62 @@ AddSimPostInit(function(player)
     local target = player or (GetPlayer and GetPlayer())
     if target and target:IsValid() then
         EnsureCompanion(target)
+        if target.ListenForEvent then
+            target:ListenForEvent("mountboat", function(inst) TransformCompanionToEgg(inst) end)
+        end
     else
         local world = GLOBAL.GetWorld()
-        if world then world:DoTaskInTime(0, function() EnsureCompanion(GetPlayer and GetPlayer()) end) end
+        if world then
+            world:DoTaskInTime(0, function()
+                local p = GetPlayer and GetPlayer()
+                if p and p:IsValid() then
+                    EnsureCompanion(p)
+                    if p.ListenForEvent then
+                        p:ListenForEvent("mountboat", function(inst) TransformCompanionToEgg(inst) end)
+                    end
+                end
+            end)
+        end
+    end
+
+    -- Robot eggs must hatch even while carried in the player's inventory or backpack.
+    local world = GLOBAL.GetWorld()
+    if not world then return end
+    world:DoPeriodicTask(10, function()
+        local p = GetPlayer and GetPlayer()
+        if not p or not p:IsValid() then return end
+
+        if p.components.inventory then
+            for _, item in pairs(p.components.inventory.itemslots) do
+                if item and item:IsValid() and item.CheckHatch then item:CheckHatch() end
+            end
+            local overflow = p.components.inventory.overflow
+            if overflow and overflow.components.container then
+                for _, item in pairs(overflow.components.container.slots) do
+                    if item and item:IsValid() and item.CheckHatch then item:CheckHatch() end
+                end
+            end
+            local active = p.components.inventory.activeitem
+            if active and active:IsValid() and active.CheckHatch then active:CheckHatch() end
+        end
+
+        local x, y, z = p.Transform:GetWorldPosition()
+        local eggs = TheSim and TheSim:FindEntities(x, y, z, 9999, {"robot_egg"})
+        for _, egg in ipairs(eggs or {}) do
+            if egg.CheckHatch then egg:CheckHatch() end
+        end
+    end)
+end)
+
+AddClassPostConstruct("components/playercontroller", function(self)
+    local orig_DoAction = self.DoAction
+    self.DoAction = function(pc, buffaction)
+        if buffaction and (buffaction.action == GLOBAL.ACTIONS.MOUNT or (buffaction.target and (buffaction.target:HasTag("boat") or buffaction.target.components.drivable))) then
+            TransformCompanionToEgg(pc.inst)
+        end
+        if orig_DoAction then
+            return orig_DoAction(pc, buffaction)
+        end
     end
 end)
 
@@ -105,7 +214,7 @@ AddClassPostConstruct("screens/playerhud", function(self)
             if btn_storage.SetTextSize then btn_storage:SetTextSize(22) end
             btn_storage:SetOnClick(function()
                 local p = self.owner or (GetPlayer and GetPlayer())
-                local comp = p and p.wx_companion
+                local comp = GetCompanionOrEgg(p)
                 if comp and comp.ToggleStorage then comp:ToggleStorage(p) end
             end)
             self.harvester_storage_btn = btn_storage
@@ -129,11 +238,13 @@ AddClassPostConstruct("widgets/containerwidget", function(self)
     local orig_Open = self.Open
     self.Open = function(widget, container, doer)
         orig_Open(widget, container, doer)
-        if container and (container:HasTag("wx_companion") or (container.components.container and container.components.container.type == "wx_companion")) then
+        if container and (container:HasTag("wx_companion") or container:HasTag("wx_companion_egg") or (container.components.container and container.components.container.type == "wx_companion")) then
             local hud = (doer and doer.HUD) or (widget.owner and widget.owner.HUD)
             if hud and hud.controls and hud.controls.top_root then
                 hud.controls.top_root:AddChild(widget)
-                widget:SetPosition(0, -58, 0)
+                -- Align the tray's top edge with the WX/combined-status icon extent (45px)
+                -- using the background image height (102px): 45 + 102/2 = 96.
+                widget:SetPosition(0, -96, 0)
             end
 
             if not widget.wx_bg then
@@ -187,7 +298,7 @@ AddClassPostConstruct("widgets/containerwidget", function(self)
 
     local orig_OnUpdate = self.OnUpdate
     self.OnUpdate = function(widget, dt)
-        if widget.isopen and widget.container and (widget.container:HasTag("wx_companion") or (widget.container.components.container and widget.container.components.container.type == "wx_companion")) then
+        if widget.isopen and widget.container and (widget.container:HasTag("wx_companion") or widget.container:HasTag("wx_companion_egg") or (widget.container.components.container and widget.container.components.container.type == "wx_companion")) then
             if not widget.container:IsValid() or (widget.owner and not widget.owner:IsValid()) then
                 widget:Close()
             end
@@ -209,6 +320,6 @@ end)
 
 TheInput:AddKeyUpHandler(toggle_storage_key, function()
     local player = GetPlayer and GetPlayer()
-    local comp = player and player.wx_companion
+    local comp = GetCompanionOrEgg(player)
     if comp and comp.ToggleStorage then comp:ToggleStorage(player) end
 end)

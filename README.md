@@ -14,8 +14,14 @@ Spawns a scaled-down WX-78 companion that follows the player, automatically harv
   - Cut Grass
   - Logs & Seeds
   - Berries & Carrots
-  - Miscellaneous ground loot (pinecones, rocks, flint, flowers, etc.)
-- **Gear Safety:** Miscellaneous loot gathering strictly excludes weapons, tools, armor, finite-use items, and irreplaceable quest objects.
+  - Ground loot (weapons, tools, armor, pinecones, rocks, flint, etc.)
+  - Flowers (including evil flowers) and mushroom plants are never picked; their slow regrowth stalls the companion
+- **Tool Chores (Woodlogging & Mining):**
+  - **Woodlogging:** Chops nearby trees (`ACTIONS.CHOP`) when equipped with an axe or woodcutting tool in equipment slot 16.
+  - **Mining:** Mines nearby boulders and mineral deposits (`ACTIONS.MINE`) when equipped with a pickaxe in equipment slot 16.
+  - Tool durability is consumed per action as normal; when a tool breaks, WX safely stops the chore.
+  - Safety exclusions protect player-built structures, spider dens, and cave entrances from being mined or chopped.
+- **Item Safety:** Only quest-critical or irreplaceable items (e.g. Chester Eyebone, Glommer Flower) with the `irreplaceable` tag are left untouched.
 - **Pathing Recovery:** If an item cannot be reached or picked up, the AI skips it for 120 seconds instead of getting stuck in an infinite action loop.
 - **Visual Harvest Ring:** Visual indicator ring shows current scan radius.
 
@@ -29,8 +35,10 @@ Spawns a scaled-down WX-78 companion that follows the player, automatically harv
 
 ### 3. In-Game Settings UI
 - **Control Panel:** Accessible via hotkey (`H`) or the `[WX]` top-right HUD button.
-- **Scan Radius Stepper:** Adjust harvest radius between 10, 15, 20, and 25 units in real time.
-- **Target Filtering:** Individual toggle checkboxes for each harvestable category.
+- **Scan Radius Stepper:** Adjust harvest radius between 10, 15, 20, 25, and 30 units in real time.
+- **Larger Panel:** Wider and taller, scaled at 1.05x for easier clicking.
+- **Categorized Pickup Filters:** Switch parent tabs, toggle a whole group or individual item families, and use `^` / `v` to set saved harvest priority. Unlisted pickables remain under “Other Pickables.”
+- **Trap Safety:** The companion harvests sprung traps only; empty traps are ignored.
 - **Master Auto-Harvest Switch:** Pause or resume harvesting on demand.
 
 ### 4. Singleplayer Engine Stability & Compatibility
@@ -78,7 +86,7 @@ Enable **WX-78 Auto-Harvester** in the in-game Mods menu.
 
 ## Automated Test Harness
 
-The mod includes an offline test harness covering syntax validation and 14 comprehensive test suites:
+The mod includes an offline test harness covering syntax validation and 17 comprehensive test suites:
 
 ```bash
 ./test.sh
