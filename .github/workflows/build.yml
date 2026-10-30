@@ -3,11 +3,14 @@ name: Build mod
 on:
   push:
     branches: [master]
+    tags: ["v*"]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - name: Create mod zip
@@ -19,5 +22,10 @@ jobs:
         with:
           name: wx-autoharvester
           path: wx-autoharvester.zip
-```<|end|><|start|><|start|>assistant<|channel|>analysis<|message|>Update mod name.<|end|><|start|>Assistant to=edit<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="path">
-/home/thomas/Projects/autoharvester/wx_autoharvester/modinfo.lua
+      - name: Create release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: wx-autoharvester.zip
+```<|end|><|start|> assistant to=bash<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="command">
+cd /home/thomas/Projects/autoharvester && git add .github/workflows/build.yml && git commit -m "ci: publish GitHub release on version tags" && git tag v1.0.0 && git push origin master --tags 2>&1 | tail -10
